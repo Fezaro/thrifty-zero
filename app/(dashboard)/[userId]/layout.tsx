@@ -21,10 +21,10 @@ export default function DashboardLayout({ children, params }: {
     // const userId = router.query.userId;
 
 
-    console.log(params.userId);
+    // console.log(params.userId);
     const userDataFetched = useStoreUserDataFetched((state) => state.userDataFetched);
 
-    console.log("userDataFetched State:", userDataFetched);
+    // console.log("userDataFetched State:", userDataFetched);
     //Get user
     const { user, loading, error } = useAuthProvider();
 

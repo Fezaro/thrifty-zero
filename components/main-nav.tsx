@@ -14,10 +14,25 @@ export function MainNav({
     const params = useParams();
     const routes =[
         {
+            href: `/${params.userId}`,
+            label: 'Overview',
+            active: pathname === `/${params.userId}`,
+          },
+          {
+            href: `/${params.userId}/seller`,
+            label: "Seller",
+            active: pathname === `/${params.userId}/seller`,
+        },
+        {
             href: `/${params.userId}/settings`,
             label: "Settings",
             active: pathname === `/${params.userId}/settings`,
-        }
+        },
+        {
+            href: `/${params.userId}/listings`,
+            label: "Listings",
+            active: pathname === `/${params.userId}/listings`,
+        },
     ];
 
     return(

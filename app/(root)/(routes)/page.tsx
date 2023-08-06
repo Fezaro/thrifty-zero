@@ -9,9 +9,13 @@ import { useStoreModal } from '@/hooks/use-store-modal';
 
 
 const HomePage= ()=> {
+  // set modal to open on page load
   const onOpen =  useStoreModal((state) => state.onOpen);
+
+  // check if modal is open
   const isOpen =  useStoreModal((state) => state.isOpen);
 
+  // set modal to open on page load
   useEffect(() => {
     if (!isOpen) {
       onOpen();

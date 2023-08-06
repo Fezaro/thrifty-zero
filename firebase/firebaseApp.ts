@@ -5,6 +5,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { EmailAuthProvider } from "firebase/auth";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,6 +22,8 @@ let app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const provider = new EmailAuthProvider();
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
-export { provider, auth, db };
+
+export { provider, auth, db, storage };
 export default app;
