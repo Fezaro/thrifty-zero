@@ -46,7 +46,7 @@ export interface Listing {
   description: string;
   price: number;
   category: string;
-  imageURLs: string;
+  imageURLs: string[];
   sellerID: string; // Reference to Sellers collection
   createdAt: any;
   updatedAt: any;
@@ -177,7 +177,7 @@ export const addListing = async (
     description: listingData.description || "",
     price: listingData.price || 0,
     category: listingData.category || "",
-    imageURLs: listingData.imageURLs || "",
+    imageURLs: listingData.imageURLs || [],
     sellerID: sellerID,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -591,6 +591,7 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
     
           return { listingID, listingData: firstListing };
         } else {
+          
           console.log("No listing found for seller with userID:", sellerUserID);
           return null;
         }

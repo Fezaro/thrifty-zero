@@ -12,18 +12,26 @@ const ListingPage = (
     console.log("Listing unique det Page");
     console.log(params.userId);
 
-    const [ListingFetchedData, setListingFetchedData] =
-        useState<{ listingID: string; listingData: Listing } | null>(null);
+    const [ListingFetchedData, setListingFetchedData] = useState<{ listingID: string; listingData: Listing } | null>(null);
     const [loading, setLoading] = useState(true);
+
+
 
     useEffect(() => {
         const getCurrentListingData = async () => {
             console.log("fetching data in listing page");
             try {
                 const data = await findFirstListingForSeller(params.userId);
-                console.log(data);
+                if (data) {
+                console.log("Listing data:", data);
                 setListingFetchedData(data);
-                setLoading(false);
+                console.log("Listing data afta:", ListingFetchedData);
+                setLoading(false);}
+                else {
+                    console.log("[listingId]No listing data found");
+                    setLoading(false);
+                }
+
             } catch (error) {
                 console.error("Error fetching listing data:", error);
                 setLoading(false);
@@ -38,6 +46,14 @@ const ListingPage = (
     if (loading) {
         return <div>Loading listings...</div>;
     }
+
+    // if (!ListingFetchedData) {
+    //     return (
+    //         <div>
+    //             <p>[listingId]Could not find listings from seller ID: {params.userId}</p>
+    //         </div>
+    //     )
+    // }
 
     return (
         <div className="flex-col">

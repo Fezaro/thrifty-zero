@@ -6,12 +6,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Listing, Seller, updateListing, updateSeller } from "@/firebase/db";
+import { Listing, Seller, addListing, updateListing, updateSeller } from "@/firebase/db";
 import { storage } from "@/firebase/firebaseApp";
 import { useAuthProvider } from "@/hooks/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { serverTimestamp } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { getDownloadURL, list, ref, uploadBytes } from "firebase/storage";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -21,7 +22,7 @@ const formSchema = z.object({
     title: z.string().nonempty({ message: "Title is required" }),
     description: z.string().nonempty({ message: "Description is required" }),
     price: z.coerce.number().min(1),
-    images:z.string().min(1),
+    category: z.string().nonempty({ message: "Category is required" }), 
     isActive: z.boolean(),
     listingURL: z.string().nonempty({ message: "Listing URL is required" }),
     contactPhoneNumber: z.string().nonempty({ message: "Contact phone number is required" }),
@@ -36,168 +37,120 @@ interface ListingsFormProps {
     initialData: Listing | undefined;
 }
 
-// export const ListingsForm: React.FC<ListingsFormProps> = (
-//     { initialData }
-// ) => {
-//     const [loading, setLoading] = useState(false);
-//     const { user } = useAuthProvider();
-//     const [selectedImage, setSelectedImage] = useState<File | null>(null);
-//     const userID = user?.uid;
-
-//     const form = useForm<ListingsFormValues>({
-//         resolver: zodResolver(formSchema),
-//         defaultValues: {
-//             title: initialData?.title,
-//             description: initialData?.description,
-//             price: initialData?.price,
-//             images: initialData?.imageURLs,
-//             isActive: initialData?.isActive,
-//             listingURL: initialData?.listingURL,
-//             contactPhoneNumber: initialData?.contactPhoneNumber,
-//             reasonForSelling: initialData?.reasonForSelling,
-//             durationUsed: initialData?.durationUsed,
-//             pickUpLocation: initialData?.pickUpLocation,
-//         },
-//     });
-
-//     // handle image upload
-//     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-//         const file = e.target.files?.[0];
-//         if (file) {
-//             setSelectedImage(file);
-//         } else {
-//             console.log("No file selected-hanupl");
-//         }
-//     };
-
-//     // // handle seller update
-//     // const updateSellerDetails = async (sellerValues:Partial<Seller>) => {
-//     //     try {
-//     //         setLoading(true);
-//     //         const updateSellerRes = await updateSeller(initialData.userID, sellerValues);
-//     //         console.log(updateSellerRes);
-
-//     //     } catch (error) {
-//     //         console.log(error);
-//     //     } finally {
-//     //         setLoading(false);
-//     //     }
-//     // }
-//     //handle listings submit
-    // const updateListingDetails = async (listingValues: Partial<Listing>) => {
-    //     try {
-    //         setLoading(true);
-    //         const updateListingRes = await updateListing(userID, listingValues);
-    //     } catch (error) {
-    //         console.log(error);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-
-//     const onSubmit = async (values: ListingsFormValues) => {
-//         try {
-//             setLoading(true);
-
-
-//             if (selectedImage) {
-//                 const filename = `${Date.now()}-${selectedImage.name}`;
-//                 const storageRef = ref(storage, `listing/${userID}/${filename}`);
-//                 const snapshot = await uploadBytes(storageRef, selectedImage);
-//                 const downloadURL = await getDownloadURL(snapshot.ref);
-//                 const imageURLs = [downloadURL];
-//                 const updatedAt = serverTimestamp();
-//                 const createdAt = serverTimestamp();
-
-                
-//                 const ListingPayload: Partial<Listing> = { ...values, updatedAt, createdAt, imageURLs, sellerID:userID };
-//                 console.log(ListingPayload);
-//             }
-//             // await updateSellerDetails(sellerPayload);
-//             console.log("Listings details updated successfully");
-
-
-//         } catch (error) {
-//             console.log(error);
-//         } finally {
-//             setLoading(false);
-//         }
-//     }
-
-
 export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
     const [loading, setLoading] = useState(false);
     const { user } = useAuthProvider();
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    // const [selectedImages, setSelectedImages] = useState<File[] | null>(null);
+    // const [selectedImages, setSelectedImages] = useState<File[]>([]); // Set the initial state to an empty array
+    const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
+
+    const [uploadedImageURLs, setUploadedImageURLs] = useState<string[]>([]);
     const userID = user?.uid || "";
-  
+    // const Params = useParams(); 
+
+
+    const title = initialData ? "Listing Form" : "Create a new listing";
+    const description = initialData ? "Update your listing" : "Add a new listing";
+    const toastMessage = initialData ? "Listing updated successfully" : "Listing created successfully";
+    const action = initialData ? "Update" : "Create";
+
+
+
     const form = useForm<ListingsFormValues>({
-      resolver: zodResolver(formSchema),
-      defaultValues: {
-        title: initialData?.title || "",
-        description: initialData?.description || "",
-        price: initialData?.price || 0,
-        images: initialData?.imageURLs || "",
-        isActive: initialData?.isActive || false,
-        listingURL: initialData?.listingURL || "",
-        contactPhoneNumber: initialData?.contactPhoneNumber || "",
-        reasonForSelling: initialData?.reasonForSelling || "",
-        durationUsed: initialData?.durationUsed || "",
-        pickUpLocation: initialData?.pickUpLocation || "",
-      },
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: initialData?.title || "",
+            description: initialData?.description || "",
+            price: initialData?.price || 0,
+            category: initialData?.category || "",
+            isActive: initialData?.isActive || false,
+            listingURL: initialData?.listingURL || "",
+            contactPhoneNumber: initialData?.contactPhoneNumber || "",
+            reasonForSelling: initialData?.reasonForSelling || "",
+            durationUsed: initialData?.durationUsed || "",
+            pickUpLocation: initialData?.pickUpLocation || "",
+        } || {},
     });
+
   
     // handle image upload
+    // Modify the handleImageUpload function to store an array of Files
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        setSelectedImage(file);
-      } else {
-        console.log("No file selected-hanupl");
-      }
-    };
-  
-    // handle listings submit
-    const onSubmit = async (values: ListingsFormValues) => {
-      try {
-        setLoading(true);
-  
-        if (selectedImage) {
-          const filename = `${Date.now()}-${selectedImage.name}`;
-          const storageRef = ref(storage, `listing/${userID}/${filename}`);
-          const snapshot = await uploadBytes(storageRef, selectedImage);
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          const imageURLs = downloadURL;
-          const updatedAt = serverTimestamp();
-          const createdAt = serverTimestamp();
-  
-          const listingPayload: Partial<Listing> = { ...values, updatedAt, createdAt, imageURLs, sellerID: userID };
-          console.log(listingPayload);
-  
-          // Update the listing using the updateListing function
-          await updateListing(userID, listingPayload);
-          console.log("Listing details updated successfully");
+        const files = e.target.files;
+        if (files) {
+            // Convert FileList to an array and store it in the state
+            setSelectedImages(files);
+            // console.log(Array.from(files));
+            console.log(files);
+            console.log(selectedImages)
+        } else {
+            console.log("No file selected-hanupl");
         }
-  
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
     };
 
+ 
+    const onSubmit = async (values: ListingsFormValues) => {
+        try {
+          setLoading(true);
+    
+          if (selectedImages && selectedImages.length > 0) {
+            // Prepare an array to hold the URLs of the uploaded images
+            const imageURLs: string[] = [];
+    
+            // Iterate through the selected images and upload each one
+            for (let i = 0; i < selectedImages.length; i++) {
+              const file = selectedImages[i];
+              const filename = `${Date.now()}-${file.name}`;
+              const storageRef = ref(storage, `listing/${userID}/${filename}`);
+              const snapshot = await uploadBytes(storageRef, file);
+              const downloadURL = await getDownloadURL(snapshot.ref);
+              imageURLs.push(downloadURL); // Add the download URL to the array
+            }
+            console.log("submit image urls")
+
+            console.log(imageURLs)
+    
+            // Set the form values to the URLs of the uploaded images
+            // form.setValue("images", imageURLs);
+            const listingPayload: Partial<Listing> = {
+                ...values,
+                updatedAt: serverTimestamp(),
+                createdAt: serverTimestamp(),
+                sellerID: userID,
+                imageURLs: imageURLs
+            };
+            await addListing( listingPayload, userID);
+            console.log(listingPayload);
+          }
+
+
+            
+
+    
+          // At this point, the "images" field in the form values will contain the URLs of the uploaded images
+          // You can now submit the form using your updateListing function or any other method you prefer
+          // For example, if you are using updateListing:
+    
+          console.log("Listing details updated successfully");
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
     return (
         <>
             <div className="flex items-center justify-between">
                 <Heading
-                    title="Listing Details"
-                    description="Manage listing details" />
+                    title={title}
+                    description={description} />
 
             </div>
             <Separator />
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
-                    <div className="grid grid-cols-3 gap-8">
+                    <div className="grid lg:grid-cols-3 gap-8 grid-cols-1 ">
                         <FormField
                             control={form.control}
                             name="title"
@@ -224,7 +177,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                     <FormMessage />
                                 </FormItem>
                             )}
-                            />
+                        />
                         <FormField
                             control={form.control}
                             name="price"
@@ -237,7 +190,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                     <FormMessage />
                                 </FormItem>
                             )}
-                            />
+                        />
                         <FormField
                             control={form.control}
                             name="listingURL"
@@ -250,25 +203,42 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                     <FormMessage />
                                 </FormItem>
                             )}
-                            />
+                        />
 
                         <FormField
                             control={form.control}
-                            name="images"
+                            name="category"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Listings Images </FormLabel>
+                                    <FormLabel>Category</FormLabel>
                                     <FormControl>
-                                        <Input disabled={loading} type="file" onChange={(e) => {
-                                            // Handle image upload when the input value changes
-                                            handleImageUpload(e);
-                                            field.onChange(e);
-                                        }} />
+                                        <Input disabled={loading} placeholder="Enter listing category" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+
+                        {/* <FormField
+                            control={form.control}
+                            name="images"
+                            render={({ field }) => ( */}
+                                <FormItem>
+                                    <FormLabel>Listings Images </FormLabel>
+                                    <FormControl>
+                                        <Input disabled={loading} type="file"
+                                            multiple
+                                            onChange={(e) => {
+                                                if (!e.target.files) return;
+                                                // Handle image upload when the input value changes
+                                                handleImageUpload(e);
+                                                // field.onChange(e);
+                                            }} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            {/* )}
+                        /> */}
 
                         <FormField
                             control={form.control}
@@ -354,7 +324,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                             Cancel
                         </Button> */}
                         <Button disabled={loading} type="submit" className="ml-auto ">
-                            Save Changes
+                            {action}
                         </Button>
                     </div>
                 </form>
