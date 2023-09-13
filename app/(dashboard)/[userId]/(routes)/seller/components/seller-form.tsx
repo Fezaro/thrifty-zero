@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Heading } from "@/components/ui/heading";
+import ImageUpload from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Seller, updateSeller } from "@/firebase/db";
 import { storage } from "@/firebase/firebaseApp";
 import { useAuthProvider } from "@/hooks/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import { serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useState } from "react";
@@ -22,7 +24,7 @@ interface sellerFormProps {
 
 const formSchema = z.object({
     shopName: z.string().min(3, { message: "Shop Name must be at least 3 characters long" }),
-    shopProfileImageURL: z.string(),
+    shopProfileImageURL: z.string().min(1),
     isActive: z.boolean(),
     location: z.string().min(3, { message: "Location must be at least 3 characters long" }),
     bio: z.string().min(10, { message: "Bio must be at least 10 characters long" }),
@@ -40,7 +42,7 @@ export const SellerForm: React.FC<sellerFormProps> = (
 ) => {
     const [loading, setLoading] = useState(false);
     const { user } = useAuthProvider();
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    // const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const userID = user?.uid;
 
     const form = useForm<sellerFormValues>({
@@ -57,20 +59,21 @@ export const SellerForm: React.FC<sellerFormProps> = (
     });
 
     // handle image upload
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setSelectedImage(file);
-        } else {
-            console.log("No file selected-hanupl");
-        }
-    };
+    // const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const file = e.target.files?.[0];
+    //     if (file) {
+    //         setSelectedImage(file);
+    //     } else {
+    //         console.log("No file selected-hanupl");
+    //     }
+    // };
 
     // handle seller update
     const updateSellerDetails = async (sellerValues:Partial<Seller>) => {
         try {
             setLoading(true);
-            const updateSellerRes = await updateSeller(initialSellerData.userID, sellerValues);
+            // const updateSellerRes = await updateSeller(initialSellerData.userID, sellerValues);
+            const updateSellerRes = await axios.patch(`/api/sellers/${userID}`, sellerValues);
             console.log(updateSellerRes);
 
         } catch (error) {
@@ -85,17 +88,17 @@ export const SellerForm: React.FC<sellerFormProps> = (
             setLoading(true);
 
 
-            if (selectedImage) {
-                const filename = `${Date.now()}-${selectedImage.name}`;
-                const storageRef = ref(storage, `shopProfile/${userID}/${filename}`);
-                const snapshot = await uploadBytes(storageRef, selectedImage);
-                const downloadURL = await getDownloadURL(snapshot.ref);
+            // if (selectedImage) {
+            //     const filename = `${Date.now()}-${selectedImage.name}`;
+            //     const storageRef = ref(storage, `shopProfile/${userID}/${filename}`);
+            //     const snapshot = await uploadBytes(storageRef, selectedImage);
+            //     const downloadURL = await getDownloadURL(snapshot.ref);
 
-                values.shopProfileImageURL = downloadURL;
+            //     values.shopProfileImageURL = downloadURL;
 
-            }
+            // }
             const updatedAt = serverTimestamp();
-            const sellerPayload: Partial<Seller> = { ...values, updatedAt };
+            const sellerPayload: Partial<Seller> = { ...values, updatedAt, userID:userID, instagramImported:false };
             console.log(sellerPayload);
             await updateSellerDetails(sellerPayload);
             console.log("Seller details updated successfully");
@@ -121,7 +124,27 @@ export const SellerForm: React.FC<sellerFormProps> = (
             <Separator />
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
-                    <div className="grid grid-cols-3 gap-8">
+                    
+                <FormField
+                            control={form.control}
+                            name="shopProfileImageURL"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Shop Profile Image </FormLabel>
+                                    <FormControl>
+                                        <ImageUpload
+                                            disabled={loading}
+                                            value={field.value ? [field.value] : []}
+                                            onChange={(url) => field.onChange(url)}
+                                            onRemove={() => field.onChange("")}
+                                            />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                    <div className="grid grid-col-1 lg:grid-cols-3 gap-8">
                         <FormField
                             control={form.control}
                             name="shopName"
@@ -136,23 +159,7 @@ export const SellerForm: React.FC<sellerFormProps> = (
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="shopProfileImageURL"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Shop Profile Image </FormLabel>
-                                    <FormControl>
-                                        <Input disabled={loading} type="file" onChange={(e) => {
-                                            // Handle image upload when the input value changes
-                                            handleImageUpload(e);
-                                            field.onChange(e);
-                                        }} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        
 
                         <FormField
                             control={form.control}

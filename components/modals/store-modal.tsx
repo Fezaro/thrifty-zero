@@ -121,7 +121,7 @@ export const StoreModal = () => {
                                         )}
                                     />
                                 
-                                <FormField
+                                {/* <FormField
                                     control={form.control}
                                     name="isSeller"
 
@@ -149,7 +149,7 @@ export const StoreModal = () => {
                                             <FormMessage />
                                         </FormItem>
                                     )}
-                                />
+                                /> */}
                                 </div>
                                 <div className="pt-6 space-x-2 flex items-center justify-end w-full">
                                     <Button disabled={loading} variant="outline" onClick={storeModal.onClose}>

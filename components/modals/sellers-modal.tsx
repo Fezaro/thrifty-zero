@@ -13,6 +13,8 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "@/firebase/firebaseApp";
 
 import { Seller } from "@/firebase/db";
+import ImageUpload from "../ui/image-upload";
+import { cn } from "@/lib/utils";
 
 // zod validation schema for the form
 const formSchema = z.object({
@@ -96,13 +98,15 @@ export const SellerModal: React.FC<SellerModalProps> = ({ isOpen, onClose, onFor
     
 
     return (
-        <Modal title="Seller Information" description="Enter your seller information"
+        <Modal  title="Seller Information" description="Enter your seller information"
             isOpen={isOpen} onClose={onClose}>
             <div>
                 <div className="space-y-4 py-2 pb-4">
                     <div className="space-y-2">
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+                            
                                 <div className="grid grid-rows-3 space-y-2">
                                     <FormField
                                         control={form.control}
@@ -118,7 +122,7 @@ export const SellerModal: React.FC<SellerModalProps> = ({ isOpen, onClose, onFor
                                         )}
                                     />
 
-                                    <FormField
+                                    {/* <FormField
                                         control={form.control}
                                         name="shopProfileImageURL"
                                         render={({ field }) => (
@@ -134,7 +138,7 @@ export const SellerModal: React.FC<SellerModalProps> = ({ isOpen, onClose, onFor
                                                 <FormMessage />
                                             </FormItem>
                                         )}
-                                    />
+                                    /> */}
 
                                     <FormField
                                         control={form.control}

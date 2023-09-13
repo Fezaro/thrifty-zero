@@ -38,8 +38,8 @@ const SignInScreen = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Card className="p-8">
-          <CardTitle>My App</CardTitle>
+        <Card className="p-8 ">
+          <CardTitle className="text-center text-2xl font-bold mb-4">Thrifty G Marketplace</CardTitle>
           <p>Error: {error.message}</p>
         </Card>
       </div>
@@ -50,9 +50,9 @@ const SignInScreen = () => {
     return (
       <div className="flex justify-center items-center  h-screen">
         <Card className="p-10">
-          <CardTitle>My App</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold mb-4">Thrifty G Marketplace</CardTitle>
           <CardContent>
-            <p>Please sign-in:</p>
+            <p className="text-center mb-6"> Please Sign In or Sign Up using your Email or Gmail.  </p>
             <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
           </CardContent>
         </Card>

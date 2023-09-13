@@ -1,6 +1,6 @@
 "use client";
 
-import { Listing, getListingByID } from "@/firebase/db";
+import { SellerListing, getAllListingsBySellerID, getListingByID, getAllListingsIdsBySellerID } from "@/firebase/db";
 
 
 import { useEffect, useState } from "react";
@@ -10,24 +10,26 @@ import { Separator } from "@/components/ui/separator";
 
 const ListingsPage = ({ params }: { params: { userId: string } }) => {
 
-    const [listingData, setListingData] = useState<Listing | null>(null);
+    const [listingsData, setListingsData] = useState<SellerListing[] | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
 
     console.log("Listing Page");
     console.log(params.userId)
 
     useEffect(() => {
-        const getCurrentListingData = async () => {
+        const getCurrentListingsData = async () => {
             console.log("fetching data in listing page");
-            const data = await getListingByID(params.userId);
-            console.log(data)
+            const data = await getAllListingsIdsBySellerID(params.userId);
             return data;
         };
 
-        getCurrentListingData()
+        getCurrentListingsData()
             .then((data) => {
-                setListingData(data);
+
+
+                setListingsData(data);
+
                 setLoading(false);
             })
             .catch((error) => {
@@ -35,26 +37,22 @@ const ListingsPage = ({ params }: { params: { userId: string } }) => {
                 setLoading(false);
             });
     }, [params.userId]);
+    console.log("Listing data afta:", listingsData);
 
     if (loading) {
         return <div>Loading...</div>;
     }
 
-    // if (!listingData) {
-    //     return (
-    //         <div>
-    //             <p>Could not find listings from seller ID: {params.userId}</p>
-    //         </div>
-    //     )
-    // }
+    console.log("Listing data:", listingsData);
 
 
-    return (<div className="flex-col">
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <ListingClient  />
-            <Separator/>
-        </div>
-    </div>);
+    return (
+        <div className="flex-col">
+            <div className="flex-1 space-y-4 p-8 pt-6">
+                <ListingClient sellListdata={listingsData} tableData={null} />
+                <Separator />
+            </div>
+        </div>);
 }
 
 export default ListingsPage;

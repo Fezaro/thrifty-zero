@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import { CldUploadWidget } from 'next-cloudinary';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -7,67 +8,73 @@ import Image from 'next/image';
 import { ImagePlus, Trash } from 'lucide-react';
 
 interface ImageUploadProps {
-    disabled?: boolean;
-    onChange: (value: string) => void;
-    onRemove: (value: string) => void;
-    value: string[];
-  }
-  
-  const ImageUpload: React.FC<ImageUploadProps> = ({
-    disabled,
-    onChange,
-    onRemove,
-    value
-  }) => {
-    const [isMounted, setIsMounted] = useState(false);
-  
-    useEffect(() => {
-      setIsMounted(true);
-    }, []);
+  disabled?: boolean;
+  onChange: (value: string) => void;
+  onRemove: (value: string) => void;
+  value: string[];
+}
 
+const ImageUpload: React.FC<ImageUploadProps> = ({
+  disabled,
+  onChange,
+  onRemove,
+  value
+}) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const onUpload = (result: any) => {
+    onChange(result.info.secure_url);
+    console.log(result.info.secure_url);
+  };
 
   if (!isMounted) {
     return null;
   }
 
-return (
-    <div className="flex flex-col space-y-4">
-        <div className="flex flex-col space-y-4">
-            {value.map((image, index) => (
-            <div
-                key={index}
-                className="relative flex flex-col items-center justify-center w-full h-48 bg-gray-100 rounded-md"
-            >
-                <Image
-                src={image}
-                alt="Listing image"
-                layout="fill"
-                objectFit="cover"
-                className="rounded-md"
-                />
-                <div className="absolute flex flex-col items-center justify-center w-full h-full bg-black bg-opacity-25 rounded-md">
-                <Button
-                    onClick={() => onRemove(image)}
-                    className="absolute top-0 right-0 p-2 text-white bg-black rounded-full"
-                >
-                    <Trash size={16} />
-                </Button>
-                </div>
+  return (
+    <div >
+      <div className="mb-4 flex items-center gap-4 ">
+        {value.map((url) => (
+          <div key={url} className="relative w-[200px] h-[200px] rounded-md overflow-hidden">
+            <div className="z-10 absolute top-2 right-2">
+              <Button type="button" onClick={() => onRemove(url)} variant="destructive" size="sm">
+                <Trash className="h-4 w-4" />
+              </Button>
             </div>
-            ))}
-        </div>
-        <Button
-            onClick={() => onChange('')}
-            className="flex items-center justify-center w-full px-4 py-2 space-x-2 text-sm text-white bg-gray-900 rounded-md hover:bg-gray-800"
-            disabled={disabled}
-        >
-            <ImagePlus size={16} />
-            <span>Add image</span>
-        </Button>
+            <Image
+              fill
+              className="object-cover"
+              alt="Image"
+              src={url}
+            />
+          </div>
+        ))}
+      </div>
+      <CldUploadWidget onUpload={onUpload} uploadPreset="vnqukgiw">
+        {({ open }) => {
+          const onClick = () => {
+            open();
+          };
+
+          return (
+            <Button
+              type="button"
+              disabled={disabled}
+              variant="secondary"
+              onClick={onClick}
+            >
+              <ImagePlus className="h-4 w-4 mr-2" />
+              Upload an Image
+            </Button>
+          );
+        }}
+      </CldUploadWidget>
     </div>
-
-
-)
-};
+  );
+}
 
 export default ImageUpload;

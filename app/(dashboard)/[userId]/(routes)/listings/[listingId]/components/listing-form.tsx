@@ -6,25 +6,32 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Listing, Seller, addListing, updateListing, updateSeller } from "@/firebase/db";
+import { Category, Listing, Seller, addListing, getAllCategories, updateListing, updateSeller } from "@/firebase/db";
 import { storage } from "@/firebase/firebaseApp";
 import { useAuthProvider } from "@/hooks/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { serverTimestamp } from "firebase/firestore";
+import { FieldValue, arrayUnion, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, list, ref, uploadBytes } from "firebase/storage";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { Trash } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-
+import Image from "next/image";
+import ImageUpload from "@/components/ui/image-upload";
+import axios from "axios";
+import { useOrigin } from "@/hooks/use-origin";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
     title: z.string().nonempty({ message: "Title is required" }),
     description: z.string().nonempty({ message: "Description is required" }),
     price: z.coerce.number().min(1),
-    category: z.string().nonempty({ message: "Category is required" }), 
+    // images: z.array(z.object({ url: z.string() })),
+    images: z.array(z.object({ url: z.string() })),
+    category: z.string().nonempty({ message: "Category is required" }),
     isActive: z.boolean(),
-    listingURL: z.string().nonempty({ message: "Listing URL is required" }),
+    listingURL: z.string(),
     contactPhoneNumber: z.string().nonempty({ message: "Contact phone number is required" }),
     reasonForSelling: z.string().nonempty({ message: "Reason for selling is required" }),
     durationUsed: z.string().nonempty({ message: "Duration used is required" }),
@@ -34,110 +41,125 @@ const formSchema = z.object({
 type ListingsFormValues = z.infer<typeof formSchema>;
 
 interface ListingsFormProps {
-    initialData: Listing | undefined;
+    initialData: Listing | null;
 }
 
 export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
     const [loading, setLoading] = useState(false);
     const { user } = useAuthProvider();
+    const router = useRouter();
+    const origin = useOrigin();
     // const [selectedImages, setSelectedImages] = useState<File[] | null>(null);
     // const [selectedImages, setSelectedImages] = useState<File[]>([]); // Set the initial state to an empty array
-    const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
+    // const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
 
-    const [uploadedImageURLs, setUploadedImageURLs] = useState<string[]>([]);
+    // const [uploadedImageURLs, setUploadedImageURLs] = useState<string[]>([]);
     const userID = user?.uid || "";
-    // const Params = useParams(); 
-
-
+    const Params = useParams();
+    console.log("Params", Params.listingId);
     const title = initialData ? "Listing Form" : "Create a new listing";
     const description = initialData ? "Update your listing" : "Add a new listing";
     const toastMessage = initialData ? "Listing updated successfully" : "Listing created successfully";
     const action = initialData ? "Update" : "Create";
 
-
+    // console.log(`${origin}/${Params.userId}/listing/${Params.listingId}`)
 
     const form = useForm<ListingsFormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: initialData?.title || "",
-            description: initialData?.description || "",
-            price: initialData?.price || 0,
-            category: initialData?.category || "",
-            isActive: initialData?.isActive || false,
-            listingURL: initialData?.listingURL || "",
-            contactPhoneNumber: initialData?.contactPhoneNumber || "",
-            reasonForSelling: initialData?.reasonForSelling || "",
-            durationUsed: initialData?.durationUsed || "",
-            pickUpLocation: initialData?.pickUpLocation || "",
-        } || {},
+        defaultValues: initialData ? {
+            ...initialData,
+            price: parseFloat(String(initialData?.price)),
+            images: initialData?.imageURLs || [],
+        } : {
+            title: '',
+            price: 0,
+            description: '',
+            category: '',
+            isActive: false,
+            listingURL: '',
+            contactPhoneNumber: '',
+            reasonForSelling: '',
+            durationUsed: '',
+            pickUpLocation: '',
+            images: []
+
+        }
+
     });
 
-  
-    // handle image upload
-    // Modify the handleImageUpload function to store an array of Files
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (files) {
-            // Convert FileList to an array and store it in the state
-            setSelectedImages(files);
-            // console.log(Array.from(files));
-            console.log(files);
-            console.log(selectedImages)
-        } else {
-            console.log("No file selected-hanupl");
-        }
-    };
+    //  get the category data for all categories
+    const [categoriesData, setCategoriesData] = useState<Category[] | null>(null);
 
- 
+    useEffect(() => {
+        const getCurrentCategoriesData = async () => {
+            console.log("fetching data in listing page for categories");
+            const data = await getAllCategories();
+            // console.log("categories data", data);
+            // set the categories data
+            setCategoriesData(data);
+            return data;
+        };
+
+        getCurrentCategoriesData()
+    }, []);
+
+    console.log(categoriesData);
+
+
+
+
     const onSubmit = async (values: ListingsFormValues) => {
         try {
-          setLoading(true);
-    
-          if (selectedImages && selectedImages.length > 0) {
-            // Prepare an array to hold the URLs of the uploaded images
-            const imageURLs: string[] = [];
-    
-            // Iterate through the selected images and upload each one
-            for (let i = 0; i < selectedImages.length; i++) {
-              const file = selectedImages[i];
-              const filename = `${Date.now()}-${file.name}`;
-              const storageRef = ref(storage, `listing/${userID}/${filename}`);
-              const snapshot = await uploadBytes(storageRef, file);
-              const downloadURL = await getDownloadURL(snapshot.ref);
-              imageURLs.push(downloadURL); // Add the download URL to the array
-            }
-            console.log("submit image urls")
+            setLoading(true);
 
-            console.log(imageURLs)
-    
-            // Set the form values to the URLs of the uploaded images
-            // form.setValue("images", imageURLs);
-            const listingPayload: Partial<Listing> = {
-                ...values,
-                updatedAt: serverTimestamp(),
-                createdAt: serverTimestamp(),
+
+            console.log("values");
+            console.log(values.images);
+            // const imageObjects = values.images.map(url => ({ url }));
+            console.log("image objects");
+            // console.log(imageObjects)
+            // Create a new Listing object with all the properties
+            const listingPayload: Listing = {
+                title: values.title,
+                description: values.description,
+                price: values.price,
+                category: values.category,
+                imageURLs: values.images,
                 sellerID: userID,
-                imageURLs: imageURLs
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                isActive: values.isActive,
+                listingURL: `${origin}/${Params.userId}/listings/${Params.listingId}`,
+                contactPhoneNumber: values.contactPhoneNumber,
+                reasonForSelling: values.reasonForSelling,
+                durationUsed: values.durationUsed,
+                pickUpLocation: values.pickUpLocation,
+                listingId: Params.listingId,
             };
-            await addListing( listingPayload, userID);
+            if (initialData) {
+                // Update the existing listing
+                // await updateListing(Params.listingId, listingPayload);
+                await axios.patch(`/api/listings/${Params.listingId}`, listingPayload);
+            } else {
+
+                // await addListing(listingPayload, userID);
+                await axios.post(`/api/listings`, listingPayload);
+            }
+
             console.log(listingPayload);
-          }
 
+            // console.log("submit image urls!!!!")
+            // console.log(values.images)
 
-            
-
-    
-          // At this point, the "images" field in the form values will contain the URLs of the uploaded images
-          // You can now submit the form using your updateListing function or any other method you prefer
-          // For example, if you are using updateListing:
-    
-          console.log("Listing details updated successfully");
+            console.log("Listing details updated successfully");
+            router.refresh();
+            router.push(`/${userID}/listings`);
         } catch (error) {
-          console.log(error);
+            console.log(error);
         } finally {
-          setLoading(false);
+            setLoading(false);
         }
-      };
+    };
 
     return (
         <>
@@ -150,11 +172,50 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
             <Separator />
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
+                    <FormField
+                        control={form.control}
+                        name="images"
+                        render={({ field }) => (
+
+
+                            <FormItem>
+                                <FormLabel>Listing Images</FormLabel>
+                                <FormControl>
+
+
+                                    <ImageUpload
+                                        value={field.value.map((image) => image.url)}
+                                        disabled={loading}
+                                        onChange={(url) => field.onChange([...field.value, { url }])}
+                                        onRemove={(url) => field.onChange([...field.value.filter((current) => current.url !== url)])}
+
+
+                                    // value={field.value.map((image) => console.log(image) )}
+                                    // value={console.log(field.value)}
+
+
+                                    // onRemove={(url) => field.onChange([...field.value.filter((current) => current.url !== url)])}
+
+                                    // value={field.value ? field.value.map((url) => url) : []}
+                                    // disabled={!field || loading}
+                                    // onChange={(url) => field.onChange([...field.value, { url }])}
+                                    // onRemove={(url) => field.onChange(field.value.filter((item) => item !== url))}
+                                    />
+
+
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )
+
+                        }
+                    />
                     <div className="grid lg:grid-cols-3 gap-8 grid-cols-1 ">
                         <FormField
                             control={form.control}
                             name="title"
                             render={({ field }) => (
+
                                 <FormItem>
                                     <FormLabel>Listing Title</FormLabel>
                                     <FormControl>
@@ -185,25 +246,13 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                 <FormItem>
                                     <FormLabel>Price</FormLabel>
                                     <FormControl>
-                                        <Input disabled={loading} placeholder="Enter price" {...field} />
+                                        <Input disabled={loading}  placeholder="100.00" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="listingURL"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Listing URL</FormLabel>
-                                    <FormControl>
-                                        <Input disabled={loading} placeholder="Enter listing URL" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        
 
                         <FormField
                             control={form.control}
@@ -211,41 +260,48 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Category</FormLabel>
-                                    <FormControl>
-                                        <Input disabled={loading} placeholder="Enter listing category" {...field} />
-                                    </FormControl>
+                                    <Select
+                                        disabled={loading}
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                        defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue
+                                                    defaultValue={field.value}
+                                                    placeholder="Slect Category">
+
+                                                </SelectValue>
+                                            </SelectTrigger>
+
+                                        </FormControl>
+                                        <SelectContent>
+                                            {categoriesData?.map((category) => (
+                                                <SelectItem
+                                                    key={category.categoryId}
+                                                    value={category.name}
+                                                >
+                                                    {category.name}
+
+                                                </SelectItem>
+                                            ))}
+
+                                        </SelectContent>
+
+                                    </Select>
+
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-
-                        {/* <FormField
-                            control={form.control}
-                            name="images"
-                            render={({ field }) => ( */}
-                                <FormItem>
-                                    <FormLabel>Listings Images </FormLabel>
-                                    <FormControl>
-                                        <Input disabled={loading} type="file"
-                                            multiple
-                                            onChange={(e) => {
-                                                if (!e.target.files) return;
-                                                // Handle image upload when the input value changes
-                                                handleImageUpload(e);
-                                                // field.onChange(e);
-                                            }} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            {/* )}
-                        /> */}
 
                         <FormField
                             control={form.control}
                             name="pickUpLocation"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Pick -up Location</FormLabel>
+                                    <FormLabel>Pick-up Location</FormLabel>
                                     <FormControl>
                                         <Input disabled={loading} placeholder="Enter listing pick up location" {...field} />
                                     </FormControl>
@@ -315,6 +371,26 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                             Toggle to enable/disable listing Availability
                                         </FormDescription>
                                     </div>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="listingURL"
+                            render={({ field }) => (
+                                <FormItem className="lg:col-span-2 col-span-1">
+                                    <FormLabel>Listing URL</FormLabel>
+                                    <FormControl>
+                                        {/* <Input disabled={true} placeholder="Listing URL"
+                                        value={`${origin}/${Params.userId}/listings/${Params.listingId}`} {...field} />
+                                         */}
+                                        {initialData ? (
+                                            <Input disabled={true} value={initialData.listingURL} />
+                                        ) : (
+                                            <Input disabled={true} placeholder="Enter listing URL" value={`${origin}/${Params.userId}/listings/${Params.listingId}`} />
+                                        )}
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

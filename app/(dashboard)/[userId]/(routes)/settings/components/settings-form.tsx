@@ -53,6 +53,7 @@ export const SettingsForm: React.FC<settingsFormProps> = (
         },
     });
     // console.log("Params: ", params.userId);
+
     const updateUserSettings = async (values: SettingsFormValues) => {
         try {
             setLoading(true);
@@ -102,9 +103,10 @@ export const SettingsForm: React.FC<settingsFormProps> = (
             // Call the API or function to submit the seller information
             // You may need to adjust this function based on your specific implementation
             //   await submitSellerInfo(sellerData);
-            await addSeller(params.userId, sellerData)
+            // await addSeller(params.userId, sellerData)
+            await axios.post(`/api/sellers`, sellerData);
             console.log("Seller Data kwa sett form: ", sellerData);
-
+            // TODO: ENABLE THIS LATER FOR PRODUCTION
             // Update the sellerInfoProvided state to true after successfully submitting seller info
             //   setSellerInfoProvided(true);
 

@@ -12,40 +12,47 @@ export function MainNav({
 
     const pathname = usePathname();
     const params = useParams();
-    const routes =[
+    const routes = [
         {
             href: `/${params.userId}`,
             label: 'Overview',
             active: pathname === `/${params.userId}`,
-          },
-          {
-            href: `/${params.userId}/seller`,
-            label: "Seller",
-            active: pathname === `/${params.userId}/seller`,
         },
+
         {
             href: `/${params.userId}/settings`,
             label: "Settings",
             active: pathname === `/${params.userId}/settings`,
         },
         {
+            href: `/${params.userId}/seller`,
+            label: "Seller",
+            active: pathname === `/${params.userId}/seller`,
+        },
+        {
+            href: `/${params.userId}/categories`,
+            label: "Categories",
+            active: pathname === `/${params.userId}/categories`,
+        },
+        {
             href: `/${params.userId}/listings`,
             label: "Listings",
             active: pathname === `/${params.userId}/listings`,
         },
+
     ];
 
-    return(
+    return (
         <nav className={cn("flex items-center space-x-4 lg:space-x-6", className)}>
             {routes.map((route) => (
                 <Link href={route.href} key={route.href}
-                className={cn('text-sm font-medium transition-colors hover:text-primary',
-                route.active ? 'text-black dark:text-white' : 'text-muted-foreground')}
+                    className={cn('text-sm font-medium transition-colors hover:text-primary',
+                        route.active ? 'text-black dark:text-white' : 'text-muted-foreground')}
                 >
                     {route.label}
                 </Link>
-            
+
             ))}
         </nav>
-)
+    )
 }

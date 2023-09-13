@@ -10,8 +10,11 @@ import {
   DocumentSnapshot, DocumentReference,
   FirestoreDataConverter, DocumentData,
   QueryDocumentSnapshot,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db, auth } from "./firebaseApp";
+
 
 
 
@@ -46,7 +49,7 @@ export interface Listing {
   description: string;
   price: number;
   category: string;
-  imageURLs: string[];
+  imageURLs: { }[];
   sellerID: string; // Reference to Sellers collection
   createdAt: any;
   updatedAt: any;
@@ -56,14 +59,20 @@ export interface Listing {
   reasonForSelling: string;
   durationUsed: string;
   pickUpLocation: string;
+  listingId: string;
 }
 
 export interface Category {
+  categoryId:string;
   name: string;
   isActive: boolean;
 }
 
-// Add a new user to the Users collection
+export interface SellerListing {
+  sellerId: string;
+  listingId: string;
+}
+
 // Add a new user to the Users collection
 export const addUser = async (
   isSeller: boolean,
@@ -72,13 +81,7 @@ export const addUser = async (
   userID: string,
   email: string,
 ) => {
-  // Check if a user is logged in
-  // const currentUser = auth.currentUser;
-
-  // if (!currentUser) {
-  //   console.error("User is not logged in.");
-  //   return;
-  // }
+ 
 
   // Create a new User object with the data from the form and the logged-in User object
   const newUser: User = {
@@ -159,13 +162,7 @@ export const addListing = async (
   listingData: Partial<Listing>,
   sellerID: string
 ) => {
-  // Check if a user is logged in
-  const currentUser = auth.currentUser;
 
-  if (!currentUser) {
-    console.error("User is not logged in.");
-    return;
-  }
   if (!listingData) {
     console.error("No listing data provided.");
     return;
@@ -187,13 +184,31 @@ export const addListing = async (
     reasonForSelling: listingData.reasonForSelling || "",
     durationUsed: listingData.durationUsed || "",
     pickUpLocation: listingData.pickUpLocation || "",
+    listingId: listingData.listingId || "",
   };
 
   // Add the listing to the Listings collection
   try {
     const listingRef = doc(collection(db, "Listings"));
 
-    await setDoc(listingRef, newListing);
+    //get the listing id
+    const listingId = listingRef.id;
+    console.log("Listing ID: ", listingId);
+    
+    // Update the listingURL using the listingId
+    // Update the listingURL by replacing "new" with the listingId
+    const updatedListingURL = newListing.listingURL.replace("new", listingId);
+    // Update the listing with the correct listingURL
+    const updatedListing: Listing = {
+      ...newListing,
+      listingURL: updatedListingURL,
+      listingId: listingId,
+    };
+    
+    await setDoc(listingRef, updatedListing);
+    //create a seller listing relationship
+    await createSellerListingRelationship(sellerID, listingId);
+
     console.log("Listing added to Firestore");
     return newListing;
   } catch (error) {
@@ -202,11 +217,77 @@ export const addListing = async (
 };
 
 
-// Add a new category to the Categories collection
-export const addCategory = async (categoryID: string, category: Category) => {
-  const categoryRef = doc(collection(db, "Categories"), categoryID);
-  await setDoc(categoryRef, category);
+// Function to create a new seller listing relationship document
+const createSellerListingRelationship = async (sellerId:string, listingId:string) => {
+  try {
+    const docRef = await addDoc(collection(db, 'SellerListings'), {
+      sellerId: sellerId,
+      listingId: listingId,
+    });
+    
+
+    console.log('Seller Listing Relationship Document added with ID: ', docRef.id);
+  } catch (error) {
+    console.error('Error adding Seller Listing Relationship Document: ', error);
+  }
 };
+
+
+// Add a new category to the Categories collection with a unique categoryId
+// Function to add a new category to the Categories collection
+export const addCategory = async (
+  categoryData: Partial<Category>,
+  // sellerId: string,
+) => {
+  // Check if a user is logged in
+  // const currentUser = auth.currentUser;
+  // if (!currentUser) {
+  //   console.error("User is not logged in.");
+  //   return;
+  // }
+  if (!categoryData) {
+    console.error("No category data provided.");
+    return;
+  }
+
+  const categoryName = categoryData.name?.toLowerCase();;
+  // Check if a category with the same lowercase name already exists
+  const existingCategoryQuery = query(collection(db, "Categories"), where("nameLower", "==", categoryName));
+  const existingCategories = await getDocs(existingCategoryQuery);
+  if (!existingCategories.empty) {
+    console.error("Category with the same name already exists.");
+    return;
+  }
+
+  // Create a new Category object with the data from the form and the logged-in User object
+  const newCategory: Partial<Category> = {
+    name: categoryName || "",
+    isActive: categoryData.isActive || false,
+  };
+
+  // Add the category to the Categories collection
+  try{
+    // generate a new unique ID for the category
+    const categoryRef = doc(collection(db, "Categories"));
+    const categoryId = categoryRef.id;
+    console.log("Category ID generated: ", categoryId);
+    // add the category Id to the category object
+    newCategory.categoryId = categoryId;
+
+    // add the category to the Categories collection
+    await setDoc(categoryRef, newCategory);
+
+    console.log("Category added to Firestore");
+    return newCategory; 
+  }
+  catch (error) {
+    console.log("Error adding category to Firestore: ", error);
+  }
+};
+
+// update a category in the Categories collection
+
+      
 
 // deactivate a user fom the Users collection
 export const deactivateUser = async (userID: string) => {
@@ -244,17 +325,6 @@ export const getListings = async () => {
   }
 }
 
-// Get all categories from the Categories collection
-export const getCategories = async () => {
-  try {
-    const categoriesSnapshot = await getDocs(collection(db, "Categories"));
-    const categories = categoriesSnapshot.docs.map((doc) => doc.data());
-    return categories;
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    return [];
-  }
-}
 
 // get the category id by name
 export const getCategoryIDByName = async (categoryName: string) => {
@@ -437,6 +507,7 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
           reasonForSelling: data.reasonForSelling,
           durationUsed: data.durationUsed,
           pickUpLocation: data.pickUpLocation,
+          listingId: data.listingId,
         };
       },
       
@@ -459,8 +530,227 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
         return null;
       }
     };
+    
+    // get all listings by seller id
+    export const getAllListingsBySellerID = async (sellerID: string) => {
+      try {
+        const listingsRef = collection(db, "Listings").withConverter(listingConverter);
+        const q = query(listingsRef, where("sellerID", "==", sellerID));
+        const querySnapshot = await getDocs(q);
+        const listings = querySnapshot.docs.map((doc) => doc.data());
+        return convertServerTimestampToDate(listings); // Convert serverTimestamps in the listing data
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+        return [];
+      }
+    };
 
+    // implement the Firestore DataConverter for sellerListing
+    export const sellerListingConverter: FirestoreDataConverter<SellerListing> = {
+      toFirestore(sellerListing: SellerListing): DocumentData {
+        // Convert the sellerListing object to Firestore data
+        return {
+          sellerId: sellerListing.sellerId,
+          listingId: sellerListing.listingId,
+          
+        };
+      },
+      fromFirestore(snapshot: QueryDocumentSnapshot): SellerListing {
+        // Convert Firestore data to the sellerListing object
+        const data = snapshot.data();
+        return {
+          sellerId: data.sellerId,
+          listingId: data.listingId,
+          
+        };
+      },
+    };
 
+    //Function to get listing data by listing id(doc ref)
+    export const getListingByListingID = async (listingID: string) => {
+      try {
+        const listingRef: DocumentReference<Listing> = doc(db, "Listings", listingID).withConverter(listingConverter);
+        const listingSnapshot: DocumentSnapshot<Listing> = await getDoc(listingRef);
+        if (listingSnapshot.exists()) {
+          const listingData = listingSnapshot.data();
+          return convertServerTimestampToDate(listingData); // Convert serverTimestamps in the listing data
+        } else {
+          console.error("Listing not found.");
+          return null;
+        }
+      } catch (error) {
+        console.error("Error fetching listing data:", error);
+        return null;
+      }
+    };
+
+    //  implement the Firestore DataConverter for category
+    export const categoryConverter: FirestoreDataConverter<Category> = {
+      toFirestore(category: Category): DocumentData {
+        // Convert the category object to Firestore data
+        return {
+          categoryId: category.categoryId,
+          name: category.name,
+          isActive: category.isActive,
+        };
+      },
+      fromFirestore(snapshot: QueryDocumentSnapshot): Category {
+        // Convert Firestore data to the category object
+        const data = snapshot.data();
+        return {
+          categoryId: data.categoryId,
+          name: data.name,
+          isActive: data.isActive,
+        };
+      },
+    };
+
+    // get all categories
+    export const getAllCategories = async () => {
+      try {
+        const categoriesRef = collection(db, "Categories").withConverter(categoryConverter);
+        const querySnapshot = await getDocs(categoriesRef);
+        const categories = querySnapshot.docs.map((doc) => doc.data());
+        return categories;
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        return [];
+      }
+    };
+
+    //function to get category data by category id
+
+    export const getCategoryByID = async (categoryID: string) => {
+      try{
+        const categoryRef: DocumentReference<Category> = doc(db, "Categories", categoryID).withConverter(categoryConverter);
+        const categorySnapshot: DocumentSnapshot<Category> = await getDoc(categoryRef);
+        if (categorySnapshot.exists()) {
+          const categoryData = categorySnapshot.data();
+          return convertServerTimestampToDate(categoryData); // Convert serverTimestamps in the category data
+        } else {
+          console.error("Category not found.");
+          return null;
+        }
+      } catch (error) {
+        console.error("Error fetching category data:", error);
+        return null;
+      }
+    };
+
+    // Function to check if listingId exists in SellerListings collection
+// async function getListingBySellerIdAndListingId(sellerId: string, listingId: string) {
+  
+//   try {
+//     // Get the SellerListings document for the given sellerId
+//     const sellerListingsRef = doc(db, 'SellerListings', sellerId).withConverter(sellerListingConverter);
+//     const sellerListingsDoc = await getDoc(sellerListingsRef);
+
+//     if (sellerListingsDoc.exists()) {
+//       // If the document exists, check if listingId is in the document data
+//       const sellerListingsData = sellerListingsDoc.data()!;
+//       if (sellerListingsData.listingId.includes(listingId)) {
+//         // Retrieve the listing from the Listings collection
+//         const listingRef = doc(db, 'Listings', listingId);
+//         const listingDoc = await getDoc(listingRef);
+
+//         if (listingDoc.exists()) {
+//           const listingData = listingDoc.data() as Listing;
+//           return listingData;
+//         }
+//       }
+//     }
+//     return null; // listingId is not valid
+//   } catch (error) {
+//     console.error('Error retrieving listing data:', error);
+//     return null;
+//   }
+// }
+
+    
+    //get listings by seller id from sellerlistings collection
+    export const getAllListingsIdsBySellerID = async (sellerID: string) => {
+      try {
+        const sellerListingRef = collection(db, "SellerListings").withConverter(sellerListingConverter);
+        const q = query(sellerListingRef, where("sellerId", "==", sellerID));
+        const querySnapshot = await getDocs(q);
+        const sellerListings = querySnapshot.docs.map((doc) => doc.data());
+        return sellerListings;
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+        return [];
+      }
+    };
+    
+    // Function to get a list of listing IDs for a given seller ID
+// Function to get a list of listing IDs for a given seller ID
+export const getListingIdsBySellerId = async (sellerId: string) => {
+  const listingIds: string[] = [];
+
+  try {
+    const q = query(collection(db, "SellerListings"), where("sellerId", "==", sellerId));
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach((doc) => {
+      // const docRef = doc.ref;
+      // const docId = docRef.id;
+      // listingIds.push(docId);
+      const data = doc.data();
+      listingIds.push(data.listingId);
+    });
+
+    return listingIds;
+  } catch (error) {
+    console.error("Error getting listing IDs:", error);
+    return [];
+  }
+};
+
+// get all listingsId from SellerListings collection by sellerId and get each corresponding listing from Listings collection
+// return an array of listings
+export const getAllListingsForSeller = async (sellerID: string) => {
+  try {
+      const sellerListingsQuery = query(collection(db, "SellerListings"), where("sellerId", "==", sellerID));
+      const sellerListingsSnapshot = await getDocs(sellerListingsQuery);
+
+      const listingIDs: string[] = [];
+
+      sellerListingsSnapshot.forEach((doc) => {
+          listingIDs.push(doc.data().listingId);
+      });
+
+      const listings: any[] = [];
+
+      for (const listingID of listingIDs) {
+          const listingDocRef = doc(db, "Listings", listingID);
+          const listingDocSnapshot = await getDoc(listingDocRef);
+          if (listingDocSnapshot.exists()) {
+              const listingData = listingDocSnapshot.data();
+              const listingWithId = { ...listingData, listingId: listingID };
+              listings.push(listingWithId);
+              
+
+          }
+      }
+
+      return listings;
+  } catch (error) {
+      console.error("Error fetching listings for seller:", error);
+      return [];
+  }
+};
+
+// get all listings in listing collection 
+export const getAllListings = async () => {
+  try {
+    const listingsRef = collection(db, "Listings").withConverter(listingConverter);
+    const querySnapshot = await getDocs(listingsRef);
+    const listings = querySnapshot.docs.map((doc) => doc.data());
+    return listings;
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    return [];
+  }
+}
 
     // search for listings by title, category, or description
     export const searchListings = async (keyword: string) => {
@@ -488,7 +778,8 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
     export const updateCategory = async (categoryID: string, category: Category) => {
       try {
         const filterData = {
-          name: category.name
+          name: category.name,
+          isActive: category.isActive,
         };
         const categoryRef = doc(db, "Categories", categoryID);
         await updateDoc(categoryRef, filterData);
@@ -568,6 +859,26 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
       }
     };
 
+    //update a category in the Categories collection
+    export const updateCategoryByID = async (categoryID: string, dataToUpdate: Partial<Category>) => {
+      try {
+        const categoryRef = doc(db, "Categories", categoryID);
+        const categorySnapshot = await getDoc(categoryRef);
+        if (!categorySnapshot.exists()) {
+          console.error("Category not found.");
+          return null;
+        }
+        const categoryData = categorySnapshot.data() as Category;
+        const mergedData = { ...categoryData, ...dataToUpdate };
+        await updateDoc(categoryRef, mergedData);
+        return mergedData;
+      } catch (error) {
+        console.error("Error updating category data:", error);
+        return null;
+
+      }
+    };
+
     //find first listing by seller id
     export const findFirstListingForSeller = async (sellerUserID: string) => {
       // Assume "db" is the Firestore instance
@@ -600,4 +911,65 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
         throw error;
       }
     };
+
+    //delete sellerListing relationship by listingId
+    export const deleteSellerListingRelationshipByListingId = async (listingID: string) => {
+      try {
+        const sellerListingsRef = collection(db, "SellerListings");
+        const q = query(sellerListingsRef, where("listingId", "==", listingID));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+        return listingID;
+      } catch (error) {
+        console.error("Error deleting seller listing relationship:", error);
+      }
+    }; 
+    
+    // delete listing by listingId
+    export const deleteListing = async (listingID: string) => {
+      try {
+        const listingRef = doc(db, "Listings", listingID);
+        await deleteDoc(listingRef);
+        console.log(`Listing id: ${listingID} deleted`)
+        // delete the seller listing relationship
+        const res = await deleteSellerListingRelationshipByListingId(listingID);
+        return res;
+      } catch (error) {
+        console.error("Error deleting listing:", error);
+      }
+    };
+    
+    // delete category by categoryId
+    export const deleteCategoryByID = async (categoryID: string) => {
+      try {
+        const categoryRef = doc(db, "Categories", categoryID);
+        await deleteDoc(categoryRef);
+        console.log(`Category id: ${categoryID} deleted`)
+        return categoryID;
+      } catch (error) {
+        console.error("DB: Error deleting category:", error);
+      }
+    }
+
+    
+    export const getListingsByCategory = async (categoryId: string): Promise<Listing[]> => {
+      try {
+        const listingsRef = collection(db, "Listings").withConverter(listingConverter);
+        const categoriesRef = collection(db, "Categories").withConverter(categoryConverter);
+
+        // get cat name by cat id
+        const categoryDoc = await getDoc(doc(categoriesRef, categoryId));
+        const categoryName = categoryDoc.data()?.name;
+        const q = query(listingsRef, where("category", "==", categoryName));
+        const querySnapshot = await getDocs(q);
+        const listings = querySnapshot.docs.map((doc) => doc.data());
+        return convertServerTimestampToDate(listings); // Convert serverTimestamps in the listing data
+      } catch (error) {
+        console.error("Error fetching listings by category:", error);
+        return [];
+      }
+    };
+    
     
