@@ -62,6 +62,8 @@ const ListingPage = (
         return <div>Loading listings...</div>;
     }
 
+    // TODO: cLEAN UP THIS CODE
+
     // if (!ListingFetchedData) {
     //     return (
     //         <div>

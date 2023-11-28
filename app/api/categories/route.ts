@@ -22,7 +22,7 @@ export async function POST(
             return new NextResponse("Unauthenticated", { status: 401 });
         }
 
-
+// TODO: cLEAN UP THIS CODE
         // if (!categoryId) {
         //     return new NextResponse("Unauthorized", { status: 401 });
         // }

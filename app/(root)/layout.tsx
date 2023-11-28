@@ -1,11 +1,8 @@
 'use client'
 import { auth } from '@/firebase/firebaseApp';
-import { redirect } from 'next/navigation'
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getUserByID } from '@/firebase/db';
 import { useState, useEffect } from 'react';
-import { DocumentData } from 'firebase/firestore';
-import { useAuthProvider } from '@/hooks/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useStoreUserDataFetched } from '@/hooks/use-store-modal';
 

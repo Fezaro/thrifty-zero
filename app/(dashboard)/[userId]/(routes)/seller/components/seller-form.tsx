@@ -57,6 +57,7 @@ export const SellerForm: React.FC<sellerFormProps> = (
             isActive: initialSellerData.isActive,
         },
     });
+    // TODO: cLEAN UP THIS CODE
 
     // handle image upload
     // const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,7 +88,7 @@ export const SellerForm: React.FC<sellerFormProps> = (
         try {
             setLoading(true);
 
-
+// TODO: cLEAN UP THIS CODE
             // if (selectedImage) {
             //     const filename = `${Date.now()}-${selectedImage.name}`;
             //     const storageRef = ref(storage, `shopProfile/${userID}/${filename}`);

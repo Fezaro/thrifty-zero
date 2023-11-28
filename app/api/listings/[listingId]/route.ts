@@ -97,6 +97,7 @@ export async function DELETE(
     { params }: { params: { listingId: string } }
 ) {
     try{
+        // TODO: cLEAN UP THIS CODE
         // check logged in user
         // check for userID of Seller
         // const {user} = useAuthProvider();
@@ -126,6 +127,7 @@ export async function GET(
     { params }: { params: { listingId: string } }
 ) {
     try{
+        // TODO: cLEAN UP THIS CODE
         // check logged in user
         // check for userID of Seller
         // const {user} = useAuthProvider();

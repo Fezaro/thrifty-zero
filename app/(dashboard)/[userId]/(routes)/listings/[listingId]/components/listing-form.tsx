@@ -49,6 +49,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
     const { user } = useAuthProvider();
     const router = useRouter();
     const origin = useOrigin();
+    // TODO: cLEAN UP THIS CODE
     // const [selectedImages, setSelectedImages] = useState<File[] | null>(null);
     // const [selectedImages, setSelectedImages] = useState<File[]>([]); // Set the initial state to an empty array
     // const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
@@ -61,7 +62,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
     const description = initialData ? "Update your listing" : "Add a new listing";
     const toastMessage = initialData ? "Listing updated successfully" : "Listing created successfully";
     const action = initialData ? "Update" : "Create";
-
+// TODO: cLEAN UP THIS CODE
     // console.log(`${origin}/${Params.userId}/listing/${Params.listingId}`)
 
     const form = useForm<ListingsFormValues>({
@@ -115,6 +116,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
 
             console.log("values");
             console.log(values.images);
+            // TODO: cLEAN UP THIS CODE
             // const imageObjects = values.images.map(url => ({ url }));
             console.log("image objects");
             // console.log(imageObjects)
@@ -189,7 +191,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                         onChange={(url) => field.onChange([...field.value, { url }])}
                                         onRemove={(url) => field.onChange([...field.value.filter((current) => current.url !== url)])}
 
-
+// TODO: cLEAN UP THIS CODE
                                     // value={field.value.map((image) => console.log(image) )}
                                     // value={console.log(field.value)}
 
@@ -381,6 +383,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                 <FormItem className="lg:col-span-2 col-span-1">
                                     <FormLabel>Listing URL</FormLabel>
                                     <FormControl>
+                                    // TODO: cLEAN UP THIS CODE
                                         {/* <Input disabled={true} placeholder="Listing URL"
                                         value={`${origin}/${Params.userId}/listings/${Params.listingId}`} {...field} />
                                          */}

@@ -60,6 +60,7 @@ const SignInScreen = () => {
     );
   }
 
+  // TODO: cLEAN UP THIS CODE
   // return (
   //   <div className="flex justify-center items-center h-screen">
   //     <Card className="p-8">

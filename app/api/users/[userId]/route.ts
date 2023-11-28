@@ -7,6 +7,7 @@ export async function PATCH(
     { params }: { params: { userId: string }}
 ) {
     try{
+        // TODO: cLEAN UP THIS CODE
         // const {user, loading, error} = useAuthProvider();
         //body contains User data from User Interface db.ts
         const body = await req.json();

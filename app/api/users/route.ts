@@ -7,6 +7,7 @@ export async function POST(
     req: Request,
 ) {
     try{
+        // TODO: cLEAN UP THIS CODE
         // const {user, loading, error} = useAuthProvider();
         //body contains User data from User Interface db.ts
         const body = await req.json();

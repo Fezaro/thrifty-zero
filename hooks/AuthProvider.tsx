@@ -43,7 +43,7 @@ export const useAuthProvider = () => {
   return context;
 };
 
-
+// TODO: cLEAN UP THIS CODE
 
 // export function useAuthProvider() {
 //   const [user, loading, error] = useAuthState(auth);

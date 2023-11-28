@@ -288,30 +288,30 @@ export const addCategory = async (
 // update a category in the Categories collection
 
       
+// TODO: cLEAN UP THIS CODE
+// // deactivate a user fom the Users collection
+// export const deactivateUser = async (userID: string) => {
+//   const userRef = doc(collection(db, "Users"), userID);
+//   await setDoc(userRef, { isActive: false }, { merge: true });
+// }
 
-// deactivate a user fom the Users collection
-export const deactivateUser = async (userID: string) => {
-  const userRef = doc(collection(db, "Users"), userID);
-  await setDoc(userRef, { isActive: false }, { merge: true });
-}
+// // deactivate a seller fom the Sellers collection
+// export const deactivateSeller = async (sellerID: string) => {
+//   const sellerRef = doc(collection(db, "Sellers"), sellerID);
+//   await setDoc(sellerRef, { isActive: false }, { merge: true });
+// }
 
-// deactivate a seller fom the Sellers collection
-export const deactivateSeller = async (sellerID: string) => {
-  const sellerRef = doc(collection(db, "Sellers"), sellerID);
-  await setDoc(sellerRef, { isActive: false }, { merge: true });
-}
+// // deactivate a listing fom the Listings collection
+// export const deactivateListing = async (listingID: string) => {
+//   const listingRef = doc(collection(db, "Listings"), listingID);
+//   await setDoc(listingRef, { isAvailable: false }, { merge: true });
+// }
 
-// deactivate a listing fom the Listings collection
-export const deactivateListing = async (listingID: string) => {
-  const listingRef = doc(collection(db, "Listings"), listingID);
-  await setDoc(listingRef, { isAvailable: false }, { merge: true });
-}
-
-//deaactivate a category from the Categories collection
-export const deactivateCategory = async (categoryID: string) => {
-  const categoryRef = doc(collection(db, "Categories"), categoryID);
-  await setDoc(categoryRef, { isActive: false }, { merge: true });
-}
+// //deaactivate a category from the Categories collection
+// export const deactivateCategory = async (categoryID: string) => {
+//   const categoryRef = doc(collection(db, "Categories"), categoryID);
+//   await setDoc(categoryRef, { isActive: false }, { merge: true });
+// }
 
 // Get all listings from the Listings collection
 export const getListings = async () => {
@@ -636,6 +636,8 @@ export const sellerConverter: FirestoreDataConverter<Seller> = {
         return null;
       }
     };
+
+    // TODO: cLEAN UP THIS CODE
 
     // Function to check if listingId exists in SellerListings collection
 // async function getListingBySellerIdAndListingId(sellerId: string, listingId: string) {

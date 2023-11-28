@@ -6,6 +6,7 @@ export async function PATCH(
     { params }: { params: { sellerId: string } }
 ) {
     try {
+        // TODO: cLEAN UP THIS CODE
         //get logged in user
         // const { user, loading, error } = useAuthProvider();
 

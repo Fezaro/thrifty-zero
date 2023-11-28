@@ -47,7 +47,7 @@ catch (err) {
 
 }
 }
-
+// TODO: cLEAN UP THIS CODE
 // export async function GET(
 // req: Request,
 // { params }: { params: { categoryId: string } }){
@@ -96,6 +96,7 @@ export async function DELETE(
 req: Request,
 { params }: { params: { categoryId: string } }){
     try{
+      // TODO: cLEAN UP THIS CODE
         // check for userID of Seller
         // check if user is logged in
         // const {user} = useAuthProvider();
