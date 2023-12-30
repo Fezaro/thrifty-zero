@@ -52,7 +52,7 @@ const SignInScreen = () => {
         <Card className="p-10">
           <CardTitle className="text-center text-2xl font-bold mb-4">Thrifty G Marketplace</CardTitle>
           <CardContent>
-            <p className="text-center mb-6"> Please Sign In or Sign Up using your Email or Gmail.  </p>
+            <p className="text-center mb-6">Please Sign In or Sign Up using your Email or Gmail.</p>
             <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
           </CardContent>
         </Card>

@@ -272,7 +272,7 @@ export const ListingsForm: React.FC<ListingsFormProps> = ({ initialData }) => {
                                             <SelectTrigger>
                                                 <SelectValue
                                                     defaultValue={field.value}
-                                                    placeholder="Slect Category">
+                                                    placeholder="Select Category">
 
                                                 </SelectValue>
                                             </SelectTrigger>

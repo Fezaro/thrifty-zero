@@ -117,17 +117,17 @@ export const addSeller = async (
   userID: string,
   sellerData: Partial<Seller>
 ) => {
-  // Check if a user is logged in
-  const currentUser = auth.currentUser;
+  // // Check if a user is logged in
+  // const currentUser = auth.currentUser;
 
-  if (!currentUser) {
-    console.error("User is not logged in.");
-    return;
-  }
-  if (!sellerData) {
-    console.error("No seller data provided.");
-    return;
-  }
+  // if (!currentUser) {
+  //   console.error("User is not logged in.");
+  //   return;
+  // }
+  // if (!sellerData) {
+  //   console.error("No seller data provided.");
+  //   return;
+  // }
 
   // Create a new Seller object with the data from the form and the logged-in User object
   const newSeller: Seller = {

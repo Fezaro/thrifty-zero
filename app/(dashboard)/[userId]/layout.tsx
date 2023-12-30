@@ -56,7 +56,7 @@ export default function DashboardLayout({ children, params }: {
     return (
       <div>
         <Navbar />
-        // TODO: cLEAN UP THIS CODE
+         {/* TODO: cLEAN UP THIS CODE */}
         {/* <p>Current user: {user?.email}</p> */}
         {/* <button onClick={logout}>Sign out</button> */}
         {children}

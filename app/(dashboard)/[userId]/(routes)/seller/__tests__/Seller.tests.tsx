@@ -1,39 +1,61 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { getSellerByID } from "@/firebase/db";
+import SellerPage from "@/app/(dashboard)/[userId]/(routes)/seller/page";
 
-import { getUserByID } from "@/firebase/db";
-// import { getSellerByID } from "../../../../../api/sellers/route"; // Import getSellerByID function
 
-import SettingsPage from "@/app/(dashboard)/[userId]/(routes)/settings/page";
+// mock firebase setup
+jest.mock("../../../../../../firebase/firebaseApp.ts", () => ({
+  auth: jest.fn(() => ({
+    currentUser: {
+      uid: "1",
+      displayName: 'John',
+    },
+  })),
+}));
 
-// jest.mock("../../../api/users", () => ({
-//   getUserByID: jest.fn(() => Promise.resolve({ id: "1", name: "John Doe" })),
-// }));
+const mockSellerData = { id: "1", name: "John Doe" };
 
-// jest.mock("../../../api/sellers/[usserId]/route.ts", () => ({
-//   getSellerByID: jest.fn(() => Promise.resolve({ id: "1", name: "John Doe" })),
-// }));
+jest.mock("../../../../../../firebase/db.ts", () => ({
+  getSellerByID: jest.fn(() => Promise.resolve(mockSellerData)),
+}));
 
-describe("SettingsPage", () => {
+//mock sellerdata state initialisation and load it if getSellerByID is called successfully
+const setSellerData = jest.fn();
+const setLoading = jest.fn();
+
+
+afterEach(() => {
+  jest.resetAllMocks();
+});
+
+describe("Seller Page fuctionality", () => {
   // Existing tests...
   // check if page loading state is displayed
-  it("displays loading state", () => {
-    render(<SettingsPage params={{ userId: "1" }} />);
+  it("displays page components and loading state", () => {
+    render(<SellerPage params={{ userId: "1" }} />);
 
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
+});
+describe("Seller Page error fuctionality", () => {
+  it("displays error message if seller is not found", async () => {
+    // Mock the console functions to prevent logs and errors from appearing in the console
+    jest.spyOn(console, "error").mockImplementation(() => { });
+    jest.spyOn(console, "log").mockImplementation(() => { });
 
-  // it("fetches seller data and logs it", async () => {
-  //   const mockSellerData = { id: "1", name: "John Doe" };
-  //   (getSellerByID as jest.Mock).mockResolvedValueOnce(mockSellerData);
+    // Mock the getSellerByID function to return a rejected promise
+    (getSellerByID as jest.Mock).mockImplementation(() => Promise.reject());
+    
+    // Render the page
+    render(<SellerPage params={{ userId: "3" }} />);
 
-  //   render(<SettingsPage params={{ userId: "1" }} />);
+    // Wait for the error message to appear in the document
+    await waitFor(() => {
+      expect(screen.getByText(/Could not find seller with ID: 3/i)).toBeInTheDocument();
+    });
 
-  //   await waitFor(() => {
-  //     expect(screen.getByText("fetching data in seller page")).toBeInTheDocument();
-  //     expect(screen.getByText(JSON.stringify(mockSellerData))).toBeInTheDocument();
-  //   });
-
-  //   expect(getSellerByID).toHaveBeenCalledWith("1");
-  // });
+    // Assert that the console functions were called
+    expect(console.error).toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalled();
+  });
 });

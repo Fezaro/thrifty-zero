@@ -34,6 +34,8 @@ const SellerPage = ({params} : {params: {userId:string}}) => {
         return <div>Loading...</div>;
     }
 
+    console.log(sellerData)
+
     if (!sellerData) {
         return (
             <div>

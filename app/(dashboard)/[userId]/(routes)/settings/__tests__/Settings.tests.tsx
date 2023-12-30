@@ -15,36 +15,38 @@ jest.mock("../../../../../../firebase/firebaseApp.ts", () => ({
     }));
 
 
-jest.mock("../../../../../api/users/[userId]/route.ts", () => ({
+jest.mock("../../../../../../firebase/db.ts", () => ({
   getUserByID: jest.fn(() => Promise.resolve({ id: "1", name: "John" })),
 }));
 
 describe("SettingsPage", () => {
-  it("renders the error message when not authenticated", async () => {
-    render(<SettingsPage params={{ userId: "1" }} />);
+  // it("renders the error message when not authenticated", async () => {
+  //   render(<SettingsPage params={{ userId: "1" }} />);
 
-    //assert
+  //   //assert
+
+  //   await waitFor(() => {
+  //     expect(screen.getByText("could not find user with ID:", { exact: false })).toBeInTheDocument();
+  //   });
+  // });
+
+  it("shows an error message if the user is not found", async () => {
+    // prevent the error message from appearing in the console
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    // prevent the log message from appearing in the console
+    jest.spyOn(console, "log").mockImplementation(() => {});
+
+    (getUserByID as jest.Mock).mockImplementation(() => Promise.reject());
+
+    render(<SettingsPage params={{ userId: "2" }} />);
 
     await waitFor(() => {
-      expect(screen.getByText("could not find user with ID:", { exact: false })).toBeInTheDocument();
+      expect(screen.getByText("Could not find user with ID: 2")).toBeInTheDocument();
     });
+
+    expect(console.error).toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalled();
   });
-
-//   it("shows an error message if the user is not found", async () => {
-//     jest.spyOn(console, "error").mockImplementation(() => {});
-//     jest.spyOn(console, "log").mockImplementation(() => {});
-
-//     (getUserByID as jest.Mock).mockImplementation(() => Promise.reject());
-
-//     render(<SettingsPage params={{ userId: "2" }} />);
-
-//     await waitFor(() => {
-//       expect(screen.getByText("Could not find user with ID: 2")).toBeInTheDocument();
-//     });
-
-//     expect(console.error).toHaveBeenCalled();
-//     expect(console.log).toHaveBeenCalled();
-//   });
 
 //   it("shows a loading message while fetching the user's data", async () => {
 //     render(<SettingsPage params={{ userId: "1" }} />);
